@@ -1,69 +1,80 @@
-import Expo, { Font } from 'expo';
+import Expo from 'expo';
 import React from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View,
-  AsyncStorage 
-} from 'react-native';
-import cacheAssetsAsync from './utilities/cacheAssetsAsync';
+import { Platform, StatusBar, StyleSheet, View, AsyncStorage, Text, Image, TextInput, TouchableOpacity, Button} from 'react-native';
+import { NavigationProvider, StackNavigation } from '@expo/ex-navigation';
 import { FontAwesome } from '@expo/vector-icons';
 
-import LoginScreen from './screens/LoginScreen'
 
-class App extends React.Component {
+import {
+    Font
+} from 'expo';
+
+import Router from './navigation/Router';
+import cacheAssetsAsync from './utilities/cacheAssetsAsync';
+
+class AppContainer extends React.Component {
   state = {
     appIsReady: false,
-    currentPage: 'login',
+    currentPage: 'home',
+    name: '',
+    password: '',
+    init: 'login'
   };
 
-  constructor(props) {
-    super(props);
-    timeLogIn = setInterval(() => {
-      this._checkLogin();
-    }, 2500);
-  }
-
   componentWillMount() {
-    this._loadAssetsAsync();
-    this._userData();
+    console.log('START TEST')
+    this._loadAssetsAsync()
+    AsyncStorage.getItem('@userData:key')
+    .then(( response ) => {
+      ( response !== null ) ? this.setState({init : 'rootNavigation'}) : console.log('please login') 
+    })
+    //this._userData();
+    //this._checkLogin();
   }
 
-  async _checkLogin(){
-    try {
-      const value = await AsyncStorage.getItem('@Who:key');
-      console.log(value);
-      if (value === 'Loged'){
-        this.setState({currentPage: 'app'});
-        clearInterval(timeLogIn);
-        console.log(this.state)
-      }
-    } catch ( error ) {
-      console.log(error);
+  async _checkLogin() {
+      try {
+            const name = await AsyncStorage.getItem('@userData:key');
+            if (name !== null) {
+                console.log(name);
+                this.setState({init: 'rootNavigation'});
+            }
+        } catch ( error ) {
+            console.log('error');
+        }
     }
-  }
 
-  async _userData(){
+/*  async _userData(){
     try {
-      await AsyncStorage.setItem('@Who:key', 'None');
+      await AsyncStorage.setItem('@name:key', 'thomas');
+      await AsyncStorage.setItem('@email:key', 'thomas@mail.com');
     } catch ( error ) {
       console.log('error');
     }
-  }
+  }*/
 
   async _loadAssetsAsync() {
-  try {
-    await cacheAssetsAsync({
-      images: [
-        require('./assets/images/expo-wordmark.png'),
-        require('./assets/icons/logo.png'),
-        require('./assets/images/expo-icon@2x.png'),
-      ],
-      fonts: [
-        FontAwesome.font,
-          { 'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf') },
-          { 'CmPrasanmit': require('./assets/fonts/CmPrasanmit.ttf') },
-          { 'CmPrasanmitBold': require('./assets/fonts/CmPrasanmitBold.ttf') },
+    try {
+      await cacheAssetsAsync({
+        images: [
+          require('./assets/images/expo-wordmark.png'),
+          require('./assets/icons/logo.png'),
+          require('./assets/images/expo-icon@2x.png'),
+          require('./assets/icons/cr.png'),
+          require('./assets/icons/ex.png'),
+          require('./assets/icons/exponent-icon.png'),
+        ],
+        fonts: [
+          FontAwesome.font,
+          {
+            'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf'),
+          },
+          {
+            'CmPrasanmit': require('./assets/fonts/CmPrasanmit.ttf'),
+          },
+          {
+            'CmPrasanmitBold': require('./assets/fonts/CmPrasanmitBold.ttf'),
+          },
         ],
       });
     } catch (e) {
@@ -78,39 +89,52 @@ class App extends React.Component {
   }
 
   render() {
-    if(this.state.appIsReady)
-    {
-      if(this.state.currentPage === 'login'){
-        return (
-          <View style={{flex: 1,flexDirection: 'column',justifyContent: 'center',alignItems: 'center', backgroundColor: '#FAFAFA'}}>
-            <LoginScreen />
-          </View>
-        );
-      }
-      else if(this.state.currentPage === 'register'){
-        return (
-          <View style={styles.container}>
-            <Text>register</Text>
-          </View>
-        );
-      }
-      else if(this.state.currentPage === 'app'){
-        return (
-          <View style={styles.container}>
-            <Text>app</Text>
-          </View>
-        );
-      }
-    }
-    else 
-    {
+
+    if (this.state.appIsReady) {
+      return(<View style={{flex: 1}}>
+      <NavigationProvider router={Router}>
+        <StackNavigation
+          id="root"
+          initialRoute={this.state.init}
+        />
+      </NavigationProvider>
+      {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+      {Platform.OS === 'android' &&
+        <View style={styles.statusBarUnderlay} />}
+    </View>);
+    } else {
       return <Expo.AppLoading />;
     }
   }
+
 }
 
 const styles = StyleSheet.create({
-  
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  statusBarUnderlay: {
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  input: {
+    height: 50,
+    borderColor: '#EEEDEE',
+    borderWidth: 1,
+    marginTop:10,
+    paddingLeft:10,
+    fontSize: 23,
+    backgroundColor: 'white',
+  },
+  buttonLogin: {
+    marginTop:10,
+    marginBottom:10,
+    justifyContent: 'center',
+    height: 50,
+    width: 260,
+    alignItems: 'center'
+  },
 });
 
-Expo.registerRootComponent(App);
+Expo.registerRootComponent(AppContainer);
